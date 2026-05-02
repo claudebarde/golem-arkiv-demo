@@ -4,6 +4,7 @@
   import { createPublicClient, http } from "@arkiv-network/sdk";
   import { kaolin } from "@arkiv-network/sdk/chains";
   import { eq, desc } from "@arkiv-network/sdk/query";
+  import { Toaster } from "svelte-french-toast";
   import Wallet from "../lib/Wallet.svelte";
   import NewLocation from "$lib/NewLocation.svelte";
 
@@ -13,7 +14,8 @@
     country: string;
   };
 
-  const ADMIN_ADDRESS = "0xD15e501aFdF31b81dEA374FF6981338463BA89D1";
+  const ADMIN_ADDRESS: `0x${string}` =
+    "0xd15e501afdf31b81dea374ff6981338463ba89d1";
 
   let userAddress = $state<`0x${string}` | null>(null);
   let location: LocationData | null = $state(null); // default location (London)
@@ -71,8 +73,7 @@
     // subscribes to entity updates
     const unsubscribe = await publicClient.subscribeEntityEvents({
       onEntityCreated: async event => {
-        console.log(`new entity created, owner: ${event.owner}`);
-        if (event.owner === ADMIN_ADDRESS) {
+        if (event.owner.toLowerCase() === ADMIN_ADDRESS.toLowerCase()) {
           const entity = await publicClient.getEntity(event.entityKey);
           if (entity) {
             const data = entity.toJson();
@@ -105,7 +106,7 @@
   }
 </style>
 
-<Wallet bind:userAddress />
+<Wallet bind:userAddress {ADMIN_ADDRESS} />
 <h1>Where is Claude?</h1>
 {#if location}
   <h3>{location.city}, {location.country}</h3>
@@ -114,3 +115,4 @@
 {#if userAddress}
   <NewLocation bind:userAddress />
 {/if}
+<Toaster />

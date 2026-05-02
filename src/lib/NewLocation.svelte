@@ -6,7 +6,7 @@
     http
   } from "@arkiv-network/sdk";
   import { kaolin } from "@arkiv-network/sdk/chains";
-  import { desc, eq } from "@arkiv-network/sdk/query";
+  import toast, { type ToastOptions } from "svelte-french-toast";
   import { jsonToPayload, ExpirationTime } from "@arkiv-network/sdk/utils";
 
   let { userAddress = $bindable<`0x${string}` | null>() } = $props();
@@ -14,6 +14,12 @@
   let country = $state("");
   let latitude = $state<number | null>(null);
   let longitude = $state<number | null>(null);
+  let submitting = $state(false);
+
+  const toastOptions: ToastOptions = {
+    position: "bottom-right",
+    style: "background-color: #E0DFDF;"
+  };
 
   const checkData = () => {
     if (
@@ -52,34 +58,51 @@
   };
 
   const updateLocation = async () => {
+    submitting = true;
     /**
      * TEST DATA
      * Toulouse, France 43.604547327512556, 1.4429675372763748
      * London, UK 51.5073509, -0.1277583
      * Istanbul, Turkey 41.0082376, 28.9783589
+     * Bogota, Colombia 4.7110, -74.0721
      */
     if (!checkData()) {
-      // TODO: display error message to user
-      console.log("Missing location data");
+      toast.error("Missing location data", toastOptions);
+      submitting = false;
       return;
     }
 
     const { walletClient } = createArkivClients(userAddress);
-    const { entityKey } = await walletClient.createEntity({
-      payload: jsonToPayload({
-        city,
-        country,
-        latitude,
-        longitude,
-        timestamp: Date.now()
-      }),
-      contentType: "application/json",
-      attributes: [
-        { key: "type", value: "location" },
-        { key: "timestamp", value: Date.now() }
-      ],
-      expiresIn: ExpirationTime.fromDays(365)
-    });
+    try {
+      toast.loading("Updating location...", {
+        ...toastOptions,
+        duration: 6000
+      });
+      const entity = await walletClient.createEntity({
+        payload: jsonToPayload({
+          city,
+          country,
+          latitude,
+          longitude,
+          timestamp: Date.now()
+        }),
+        contentType: "application/json",
+        attributes: [
+          { key: "type", value: "location" },
+          { key: "timestamp", value: Date.now() }
+        ],
+        expiresIn: ExpirationTime.fromDays(365)
+      });
+      console.log({ entity });
+      toast.success("Location updated successfully", toastOptions);
+    } catch (error) {
+      toast.error("Error updating location", toastOptions);
+    }
+    submitting = false;
+    city = "";
+    country = "";
+    latitude = null;
+    longitude = null;
   };
 </script>
 
@@ -90,10 +113,8 @@
     flex-direction: column;
     align-items: center;
 
-    input {
+    div {
       margin: 5px;
-      padding: 8px;
-      width: 200px;
     }
   }
 </style>
@@ -132,5 +153,11 @@
       bind:value={longitude}
     />
   </div>
-  <button onclick={updateLocation}>Submit</button>
+  <button class="button-24" onclick={updateLocation} disabled={submitting}>
+    {#if submitting}
+      Updating...
+    {:else}
+      Submit
+    {/if}
+  </button>
 </div>

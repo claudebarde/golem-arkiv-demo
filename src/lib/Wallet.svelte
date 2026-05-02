@@ -2,7 +2,7 @@
   import { kaolin } from "@arkiv-network/sdk/chains";
   import "viem/window";
 
-  let { userAddress = $bindable() } = $props();
+  let { userAddress = $bindable(), ADMIN_ADDRESS } = $props();
   let hasMetaMask = $state(false);
 
   const connectWallet = async () => {
@@ -77,14 +77,18 @@
 </style>
 
 <div id="wallet">
-  <button onclick={connectWallet}>
+  <button class="button-24" onclick={connectWallet}>
     {hasMetaMask && userAddress
       ? truncateAddress(userAddress)
       : "Connect to Kaolin Chain"}
   </button>
   <div>
     {#if userAddress}
-      <p>Connected to Kaolin Chain</p>
+      <p>
+        Connected to Kaolin Chain {userAddress === ADMIN_ADDRESS
+          ? "(Admin)"
+          : ""}
+      </p>
     {/if}
   </div>
 </div>
